@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
-using System.Collections.Concurrent;
+using Microsoft.EntityFrameworkCore;
 using TaskTracker.Api.Models;
+using TaskTracker.Api.Data;
 
 namespace TaskTracker.Api.Controllers;
 
@@ -8,47 +9,92 @@ namespace TaskTracker.Api.Controllers;
 [Route("api/tasks")]
 public class TasksController : ControllerBase
 {
-    // Временное хранилище задач (замените на реальную БД позже)
-    private static readonly ConcurrentDictionary<int, TaskItem> _tasks = new();
-    private static int _nextId = 1;
+    private readonly AppDbContext _db; // Вместо _tasks
 
-    // GET: api/tasks
-    [HttpGet]
-    public ActionResult<IEnumerable<TaskItem>> GetAllTasks()
+    public TasksController(AppDbContext db)
     {
-        return Ok(_tasks.Values.OrderBy(t => t.Id));
+        _db = db; // Внедряем контекст БД
     }
 
-    // GET: api/tasks/5
-    [HttpGet("{id}")]
-    public ActionResult<TaskItem> GetTask(int id)
+        // GET: api/tasks
+        [HttpGet]
+    public async Task<ActionResult<IEnumerable<TaskItem>>> GetAllTasks()
     {
-        if (!_tasks.TryGetValue(id, out var task))
+        return await _db.Tasks.OrderBy(t => t.Id).ToListAsync();
+    }
+
+    // GET: api/tasks/id
+    [HttpGet("{id}")]
+    public async Task<ActionResult<TaskItem>> GetTask(int id)
+    {
+        var task = await _db.Tasks.FindAsync(id);
+
+        if (task == null)
         {
             return NotFound();
         }
+
         return Ok(task);
     }
 
     // POST: api/tasks
     [HttpPost]
-    public ActionResult<TaskItem> CreateTask([FromBody] TaskItem task)
+    public async Task<ActionResult<TaskItem>> CreateTask([FromBody] TaskItem task)
     {
-        task.Id = _nextId++;
+        if (task.DueDate.HasValue && task.DueDate < DateTime.Now)
+        {
+            return BadRequest("Срок выполнения не может быть в прошлом");
+        }
+
         task.CreatedAt = DateTime.Now;
-        _tasks[task.Id] = task;
+        _db.Tasks.Add(task);
+        await _db.SaveChangesAsync();
 
         return CreatedAtAction(nameof(GetTask), new { id = task.Id }, task);
     }
 
-    // DELETE: api/tasks/5
-    [HttpDelete("{id}")]
-    public IActionResult DeleteTask(int id)
+    // PUT: api/tasks/5
+    [HttpPut("{id}")]
+    public async Task<IActionResult> UpdateTask(int id, [FromBody] TaskItem updatedTask)
     {
-        if (!_tasks.TryRemove(id, out _))
+        if (id <= 0)
+            return BadRequest("ID должен быть больше 0!");
+
+        // Находим задачу в БД
+        var existingTask = await _db.Tasks.FindAsync(id);
+        if (existingTask == null)
+            return NotFound();
+
+        // Обновляем поля (кроме Id и CreatedAt)
+        existingTask.Title = updatedTask.Title ?? existingTask.Title;
+        existingTask.Description = updatedTask.Description ?? existingTask.Description;
+        existingTask.IsDone = updatedTask.IsDone;
+        existingTask.DueDate = updatedTask.DueDate;
+
+        // Сохраняем изменения
+        await _db.SaveChangesAsync();
+
+        return Ok(existingTask);
+    }
+
+    // DELETE: api/tasks/id
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> DeleteTask(int id)
+    {
+        //проверка id
+        if (id <= 0)
+            return BadRequest("ID должен быть больше 0!");
+
+        var task = await _db.Tasks.FindAsync(id);
+        if (task == null)
         {
             return NotFound();
         }
+
+        _db.Tasks.Remove(task);
+        await _db.SaveChangesAsync();
+
         return NoContent();
-    }
+    } 
+    
 }

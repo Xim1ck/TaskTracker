@@ -1,8 +1,12 @@
 using TaskTracker.Api.Services;
+using TaskTracker.Api.Data;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseSqlite("Data Source=tasks.db"));
 builder.Services.AddSingleton<TaskService>();  // <-- Регистрация вашего сервиса
 builder.Services.AddControllers();            // <-- Добавьте эту строку для поддержки контроллеров
 builder.Services.AddEndpointsApiExplorer();
