@@ -24,5 +24,7 @@ if (app.Environment.IsDevelopment())
 //app.UseHttpsRedirection();
 
 app.MapControllers();  // <-- Добавьте эту строку для маршрутизации контроллеров
+app.UseDefaultFiles();
+app.UseStaticFiles();
 
 app.Run();

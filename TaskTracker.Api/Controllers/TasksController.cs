@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Mvc;
+п»їusing Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TaskTracker.Api.Models;
 using TaskTracker.Api.Data;
@@ -9,11 +9,11 @@ namespace TaskTracker.Api.Controllers;
 [Route("api/tasks")]
 public class TasksController : ControllerBase
 {
-    private readonly AppDbContext _db; // Вместо _tasks
+    private readonly AppDbContext _db; // Р’РјРµСЃС‚Рѕ _tasks
 
     public TasksController(AppDbContext db)
     {
-        _db = db; // Внедряем контекст БД
+        _db = db; // Р’РЅРµРґСЂСЏРµРј РєРѕРЅС‚РµРєСЃС‚ Р‘Р”
     }
 
         // GET: api/tasks
@@ -41,9 +41,15 @@ public class TasksController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<TaskItem>> CreateTask([FromBody] TaskItem task)
     {
+        // РџСЂРѕРІРµСЂРєР° РєРѕРґРёСЂРѕРІРєРё (РґРѕР±Р°РІСЊС‚Рµ РІ РЅР°С‡Р°Р»Рѕ РјРµС‚РѕРґР°)
+        if (string.IsNullOrEmpty(task.Title) || task.Title.Contains("пїЅ"))
+        {
+            return BadRequest("РќРµРєРѕСЂСЂРµРєС‚РЅР°СЏ РєРѕРґРёСЂРѕРІРєР° РґР°РЅРЅС‹С…. РСЃРїРѕР»СЊР·СѓР№С‚Рµ UTF-8");
+        }
+
         if (task.DueDate.HasValue && task.DueDate < DateTime.Now)
         {
-            return BadRequest("Срок выполнения не может быть в прошлом");
+            return BadRequest("РЎСЂРѕРє РІС‹РїРѕР»РЅРµРЅРёСЏ РЅРµ РјРѕР¶РµС‚ Р±С‹С‚СЊ РІ РїСЂРѕС€Р»РѕРј");
         }
 
         task.CreatedAt = DateTime.Now;
@@ -58,20 +64,20 @@ public class TasksController : ControllerBase
     public async Task<IActionResult> UpdateTask(int id, [FromBody] TaskItem updatedTask)
     {
         if (id <= 0)
-            return BadRequest("ID должен быть больше 0!");
+            return BadRequest("ID РґРѕР»Р¶РµРЅ Р±С‹С‚СЊ Р±РѕР»СЊС€Рµ 0!");
 
-        // Находим задачу в БД
+        // РќР°С…РѕРґРёРј Р·Р°РґР°С‡Сѓ РІ Р‘Р”
         var existingTask = await _db.Tasks.FindAsync(id);
         if (existingTask == null)
             return NotFound();
 
-        // Обновляем поля (кроме Id и CreatedAt)
+        // РћР±РЅРѕРІР»СЏРµРј РїРѕР»СЏ (РєСЂРѕРјРµ Id Рё CreatedAt)
         existingTask.Title = updatedTask.Title ?? existingTask.Title;
         existingTask.Description = updatedTask.Description ?? existingTask.Description;
         existingTask.IsDone = updatedTask.IsDone;
         existingTask.DueDate = updatedTask.DueDate;
 
-        // Сохраняем изменения
+        // РЎРѕС…СЂР°РЅСЏРµРј РёР·РјРµРЅРµРЅРёСЏ
         await _db.SaveChangesAsync();
 
         return Ok(existingTask);
@@ -81,9 +87,9 @@ public class TasksController : ControllerBase
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteTask(int id)
     {
-        //проверка id
+        //РїСЂРѕРІРµСЂРєР° id
         if (id <= 0)
-            return BadRequest("ID должен быть больше 0!");
+            return BadRequest("ID РґРѕР»Р¶РµРЅ Р±С‹С‚СЊ Р±РѕР»СЊС€Рµ 0!");
 
         var task = await _db.Tasks.FindAsync(id);
         if (task == null)
