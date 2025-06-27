@@ -3,48 +3,200 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Менеджер задач</title>
+    <title>TaskMaster - Управление задачами</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <style>
-        .task-completed {
-            text-decoration: line-through;
-            opacity: 0.7;
+        :root {
+            --primary-color: #4361ee;
+            --secondary-color: #3f37c9;
+            --success-color: #4cc9f0;
+            --danger-color: #f72585;
+            --light-bg: #f8f9fa;
+            --dark-text: #212529;
         }
 
-        .task-due-date {
+        body {
+            background-color: #f5f7fa;
+            color: var(--dark-text);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .app-container {
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 2rem;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        .task-card {
+            transition: all 0.3s ease;
+            border-left: 4px solid var(--primary-color);
+            margin-bottom: 1rem;
+            border-radius: 8px;
+        }
+
+            .task-card:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 6px 12px rgba(0, 0, 0, 0.05);
+            }
+
+        .task-completed {
+            opacity: 0.8;
+            border-left-color: var(--success-color);
+            background-color: rgba(76, 201, 240, 0.05);
+        }
+
+            .task-completed .task-title {
+                text-decoration: line-through;
+                color: #6c757d;
+            }
+
+        .task-title {
+            font-weight: 600;
+            color: var(--dark-text);
+            margin-bottom: 0.5rem;
+        }
+
+        .task-description {
+            color: #495057;
+            font-size: 0.95rem;
+        }
+
+        .task-meta {
             font-size: 0.8rem;
             color: #6c757d;
         }
+
+        .badge-due {
+            background-color: #ffd166;
+            color: #333;
+        }
+
+        .badge-completed {
+            background-color: var(--success-color);
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+
+            .btn-primary:hover {
+                background-color: var(--secondary-color);
+                border-color: var(--secondary-color);
+            }
+
+        .btn-success {
+            background-color: var(--success-color);
+            border-color: var(--success-color);
+        }
+
+        .btn-danger {
+            background-color: var(--danger-color);
+            border-color: var(--danger-color);
+        }
+
+        .filter-btn.active {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .loading-spinner {
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem 0;
+            color: #6c757d;
+        }
+
+            .empty-state i {
+                font-size: 3rem;
+                margin-bottom: 1rem;
+                color: #dee2e6;
+            }
     </style>
 </head>
 <body>
-    <div class="container mt-5">
+    <div class="app-container">
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h1>Мои задачи</h1>
-            <button id="refreshBtn" class="btn btn-outline-secondary">Обновить</button>
+            <h1 class="h3 mb-0">
+                <i class="bi bi-check2-circle me-2"></i>TaskMaster
+            </h1>
+            <button id="refreshBtn" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-clockwise"></i> Обновить
+            </button>
         </div>
 
+        <!-- Фильтры -->
+        <div class="btn-group mb-4 w-100" role="group">
+            <button type="button" class="btn btn-outline-primary filter-btn active" data-filter="all">
+                <i class="bi bi-list-ul"></i> Все
+            </button>
+            <button type="button" class="btn btn-outline-primary filter-btn" data-filter="active">
+                <i class="bi bi-pencil-square"></i> Активные
+            </button>
+            <button type="button" class="btn btn-outline-primary filter-btn" data-filter="completed">
+                <i class="bi bi-check2-all"></i> Завершенные
+            </button>
+        </div>
+
+        <!-- Форма добавления -->
         <form id="taskForm" class="mb-4">
+            <div class="input-group mb-2">
+                <input type="text" id="taskInput" class="form-control form-control-lg"
+                       placeholder="Что нужно сделать?" required>
+                <button type="submit" class="btn btn-primary btn-lg">
+                    <i class="bi bi-plus-lg"></i> Добавить
+                </button>
+            </div>
             <div class="row g-2">
                 <div class="col-md-8">
-                    <input type="text" id="taskInput" class="form-control" placeholder="Название задачи" required>
+                    <textarea id="descriptionInput" class="form-control" rows="2"
+                              placeholder="Описание (необязательно)"></textarea>
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-4">
                     <input type="datetime-local" id="dueDateInput" class="form-control">
                 </div>
-                <div class="col-md-1">
-                    <button type="submit" class="btn btn-primary w-100">+</button>
-                </div>
-            </div>
-            <div class="mt-2">
-                <textarea id="descriptionInput" class="form-control" rows="2" placeholder="Описание (необязательно)"></textarea>
             </div>
         </form>
 
-        <div id="taskList" class="list-group">
-            <!-- Задачи будут добавляться здесь -->
-            <div class="text-center text-muted py-3" id="loadingIndicator">
-                Загрузка задач...
+        <!-- Список задач -->
+        <div id="taskList">
+            <div class="empty-state">
+                <i class="bi bi-emoji-smile"></i>
+                <h4>Нет задач</h4>
+                <p>Добавьте свою первую задачу</p>
             </div>
         </div>
     </div>

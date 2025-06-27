@@ -83,6 +83,23 @@ public class TasksController : ControllerBase
         return Ok(existingTask);
     }
 
+    [HttpPut("{id}/status")]
+    public async Task<IActionResult> UpdateTaskStatus(int id, [FromBody] TaskStatusDto statusDto)
+    {
+        var task = await _db.Tasks.FindAsync(id);
+        if (task == null) return NotFound();
+
+        task.IsDone = statusDto.IsDone;
+        await _db.SaveChangesAsync();
+
+        return Ok(task);
+    }
+
+    public class TaskStatusDto
+    {
+        public bool IsDone { get; set; }
+    }
+
     // DELETE: api/tasks/id
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteTask(int id)
